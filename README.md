@@ -1,4 +1,4 @@
-# ****Individuell Labb 1k5: Robust AI-integration & Tillförlitligh ****
+# Individuell Labb 1k5: Robust AI-integration & Tillförlitligh 
 
 ## Översikt
 

@@ -13,6 +13,7 @@ Syftet är att bygga ett tillförlitligt lager runt AI‑anropet med fokus på:
 -   fallback
 -   skydd mot hallucinationer
 
+
 Projektet använder en sentimentanalys som exempel.
 
 ## Säker konfiguration

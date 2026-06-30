@@ -8,6 +8,8 @@ WORKDIR /app
 COPY pom.xml .
 COPY mvnw .
 COPY .mvn .mvn
+RUN chmod +x mvnw
+
 
 # Ladda ner dependencies offline (snabbare builds)
 RUN ./mvnw dependency:go-offline

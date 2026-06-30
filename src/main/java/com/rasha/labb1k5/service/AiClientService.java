@@ -48,7 +48,7 @@ public class AiClientService {
                 if (restClient == null) {
 
                     if (apiKey.isBlank()) {
-                        throw new IllegalStateException("Missing OpenAI API key");
+                        return null; // ⭐ CI/test fallback
                     }
 
                     SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
@@ -68,7 +68,12 @@ public class AiClientService {
     public AiResponseDto analyzeSentiment(String userText) {
 
         if (apiKey.isBlank()) {
-            return fallbackDto(); // CI/test fallback
+            return fallbackDto(); // ⭐ CI/test fallback
+        }
+
+        RestClient client = getClient();
+        if (client == null) {
+            return fallbackDto(); // ⭐ extra säkerhet
         }
 
         String systemPrompt = promptBuilder.buildSystemPrompt();
@@ -84,7 +89,7 @@ public class AiClientService {
         );
 
         try {
-            String rawBody = getClient().post()
+            String rawBody = client.post()
                     .uri("")
                     .header("Authorization", "Bearer " + apiKey)
                     .contentType(MediaType.APPLICATION_JSON)

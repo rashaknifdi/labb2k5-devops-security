@@ -7,6 +7,7 @@ import com.rasha.labb1k5.util.PromptBuilder;
 import jakarta.annotation.PostConstruct;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
@@ -30,8 +31,8 @@ public class AiClientService {
 
     public AiClientService(
             @Value("${openai.api.key:}") String apiKey,
-            Validator validator,
-            PromptBuilder promptBuilder
+            @Autowired(required = false) Validator validator,
+            @Autowired(required = false) PromptBuilder promptBuilder
     ) {
         this.apiKey = apiKey != null ? apiKey : "";  // ← Säkerställ att det aldrig är null
         this.validator = validator;
@@ -67,7 +68,7 @@ public class AiClientService {
 
     public AiResponseDto analyzeSentiment(String userText) {
 
-        if (apiKey.isBlank()) {
+        if (apiKey.isBlank() || promptBuilder == null) {
             return fallbackDto(); // ⭐ CI/test fallback
         }
 
@@ -103,10 +104,12 @@ public class AiClientService {
             String content = (String) message.get("content");
 
             AiResponseDto dto = objectMapper.readValue(content, AiResponseDto.class);
-            Set<ConstraintViolation<AiResponseDto>> violations = validator.validate(dto);
-
-            if (!violations.isEmpty()) {
-                return fallbackDto();
+            
+            if (validator != null) {
+                Set<ConstraintViolation<AiResponseDto>> violations = validator.validate(dto);
+                if (!violations.isEmpty()) {
+                    return fallbackDto();
+                }
             }
 
             return dto;

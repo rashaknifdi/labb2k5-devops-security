@@ -30,7 +30,7 @@ public class AiClientService {
     private volatile RestClient restClient; // lazy init
 
     public AiClientService(
-            @Value("${openai.api.key:}") String apiKey,
+            @Value("${OPENAI_API_KEY:}") String apiKey,
             @Autowired(required = false) Validator validator,
             @Autowired(required = false) PromptBuilder promptBuilder
     ) {
@@ -42,6 +42,7 @@ public class AiClientService {
             System.out.println("WARN: No OpenAI API key provided. AI features disabled.");
         }
     }
+
 
     private RestClient getClient() {
         if (restClient == null) {

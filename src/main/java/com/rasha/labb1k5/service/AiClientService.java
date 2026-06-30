@@ -34,7 +34,7 @@ public class AiClientService {
             @Autowired(required = false) Validator validator,
             @Autowired(required = false) PromptBuilder promptBuilder
     ) {
-        this.apiKey = apiKey != null ? apiKey : "";  // ← Säkerställ att det aldrig är null
+        this.apiKey = apiKey != null ? apiKey : "";
         this.validator = validator;
         this.promptBuilder = promptBuilder;
 

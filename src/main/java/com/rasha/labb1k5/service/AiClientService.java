@@ -33,7 +33,7 @@ public class AiClientService {
             Validator validator,
             PromptBuilder promptBuilder
     ) {
-        this.apiKey = apiKey;
+        this.apiKey = apiKey != null ? apiKey : "";  // ← Säkerställ att det aldrig är null
         this.validator = validator;
         this.promptBuilder = promptBuilder;
 

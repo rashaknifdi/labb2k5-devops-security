@@ -34,6 +34,14 @@ jobs:
       - name: Run tests
         run: mvn -B test
 
+      # ⭐⭐⭐ Dependency-Check (VG-version) ⭐⭐⭐
+      - name: Run OWASP Dependency Check
+        env:
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+        run: mvn -B verify
+      # ⭐⭐⭐ slut ⭐⭐⭐
+
+
   docker-push:
     runs-on: ubuntu-latest
     needs: build-and-test

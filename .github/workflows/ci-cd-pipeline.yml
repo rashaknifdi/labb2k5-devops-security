@@ -34,11 +34,12 @@ jobs:
       - name: Run tests
         run: mvn -B test
 
-      # ⭐⭐⭐ Dependency-Check (VG-version) ⭐⭐⭐
+      # ⭐⭐⭐ Dependency-Check ⭐⭐⭐
       - name: Run OWASP Dependency Check
         env:
           NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
-        run: mvn -B verify
+        run: mvn -B verify -Dnvd.api.key=${{ secrets.NVD_API_KEY }} -Dnvd.api.delay=3000
+
       # ⭐⭐⭐ slut ⭐⭐⭐
 
 

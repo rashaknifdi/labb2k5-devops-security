@@ -41,6 +41,12 @@ jobs:
         run: mvn -B verify -Dnvd.api.key=${{ secrets.NVD_API_KEY }} -Dnvd.api.delay=3000
 
       # ⭐⭐⭐ slut ⭐⭐⭐
+      - name: Test NVD API key
+        run: |
+          curl -H "apiKey: ${{ secrets.NVD_API_KEY }}" \
+               -H "User-Agent: dependency-check" \
+               "https://services.nvd.nist.gov/rest/json/cves/2.0?keyword=test&resultsPerPage=1"
+
 
 
   docker-push:

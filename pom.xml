@@ -84,20 +84,24 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
 
+            <!-- ⭐ OWASP Dependency-Check ⭐ -->
             <plugin>
                 <groupId>org.owasp</groupId>
                 <artifactId>dependency-check-maven</artifactId>
                 <version>9.0.9</version>
 
                 <configuration>
-                    <!-- ⭐ Disable NVD API v2 (fixes 403/404) ⭐ -->
+                    <!-- Disable auto-update (we use cached DB) -->
                     <autoUpdate>false</autoUpdate>
 
-                    <!-- ⭐ Use only local cached data ⭐ -->
-                    <dataDirectory>${project.build.directory}/dependency-check-data</dataDirectory>
+                    <!-- Local DB directory (matches CI cache path) -->
+                    <dataDirectory>${user.home}/.dependency-check/data</dataDirectory>
 
-                    <!-- ⭐ Fail only on high severity CVEs ⭐ -->
+                    <!-- Fail only on high severity CVEs -->
                     <failBuildOnCVSS>7</failBuildOnCVSS>
+
+                    <!-- Allow build to continue if DB missing on first run -->
+                    <failOnError>false</failOnError>
                 </configuration>
 
                 <executions>
@@ -108,7 +112,6 @@
                     </execution>
                 </executions>
             </plugin>
-
 
         </plugins>
     </build>

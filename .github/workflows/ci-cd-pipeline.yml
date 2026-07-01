@@ -31,12 +31,21 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-m2-
 
+      # ⭐ Cache Dependency-Check database ⭐
+      - name: Cache Dependency-Check Database
+        uses: actions/cache@v4
+        with:
+          path: ~/.dependency-check/data
+          key: ${{ runner.os }}-dependency-check-${{ github.run_id }}
+          restore-keys: |
+            ${{ runner.os }}-dependency-check-
+
       - name: Run tests
         run: mvn -B test
 
-      # ⭐ Dependency-Check offline mode (stabilt, inga 403/404) ⭐
+      # ⭐ Run Dependency-Check using cached database ⭐
       - name: Run OWASP Dependency Check
-        run: mvn -B dependency-check:check
+        run: mvn -B dependency-check:check -Ddependency-check.data.directory=$HOME/.dependency-check/data
 
   docker-push:
     runs-on: ubuntu-latest

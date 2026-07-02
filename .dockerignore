@@ -1,0 +1,50 @@
+# ---------------------------------------------------------
+# Ignorera byggartefakter
+# ---------------------------------------------------------
+target/
+*.jar
+*.war
+
+# ---------------------------------------------------------
+# Ignorera Git-relaterade filer
+# ---------------------------------------------------------
+.git/
+.gitignore
+.gitattributes
+
+# ---------------------------------------------------------
+# Ignorera IDE-filer (IntelliJ, VS Code, Eclipse)
+# ---------------------------------------------------------
+.idea/
+*.iml
+.vscode/
+.project
+.classpath
+.settings/
+
+# ---------------------------------------------------------
+# Ignorera loggar och temporära filer
+# ---------------------------------------------------------
+*.log
+*.tmp
+*.swp
+
+# ---------------------------------------------------------
+# Ignorera OS-specifika filer
+# ---------------------------------------------------------
+.DS_Store
+Thumbs.db
+
+# ---------------------------------------------------------
+# Ignorera dokumentation och annat som inte behövs i Docker
+# ---------------------------------------------------------
+README.md
+LICENSE
+*.md
+
+# ---------------------------------------------------------
+# Ignorera Dependency-Check databas (hanteras i CI)
+# ---------------------------------------------------------
+dependency-check-report.html
+dependency-check-report.xml
+dependency-check/

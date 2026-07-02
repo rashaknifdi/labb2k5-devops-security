@@ -1,275 +1,225 @@
-# Individuell Labb 1k5: Robust AI-integration & Tillförlitligh 
+# **Individuell Labb 2k5 – DevOps, CI/CD & Applikationssäkerhet**
 
-## Översikt
+### *Spring Boot + Docker + GitHub Actions*
 
-Detta projekt är en Spring Boot‑applikation som fungerar som en säker och robust proxy mot en extern AI‑tjänst (OpenAI).  
-Syftet är att bygga ett tillförlitligt lager runt AI‑anropet med fokus på:
+## **Översikt**
 
--   säker nyckelhantering
--   timeouts
--   deterministisk prompt
--   rate‑limit‑hantering
--   validering
--   fallback
--   skydd mot hallucinationer
+Detta projekt är en säkerhetsförstärkt Spring Boot‑applikation som analyserar sentiment via ett AI‑API. I denna labb har jag implementerat:
 
+-   Containerisering med Docker
 
-Projektet använder en sentimentanalys som exempel.
+-   CI/CD‑pipeline med GitHub Actions
 
-## Säker konfiguration
+-   Automatiska tester
 
-****API‑nyckeln hanteras via miljövariabel och aldrig i koden.****
+-   Automatiserad Docker‑deployment
 
-Nyckeln injiceras med:
+-   **JWT**‑baserad autentisering
 
-```java
+-   **OWASP** Dependency‑Check
 
-@Value("${openai.api.key}")
+-   Åtgärder för tre **OWASP** Top 10‑sårbarheter
+
+## **API‑endpoints**
+
+| Endpoint | Metod | Beskrivning |
+| --- | --- | --- |
+| /token | GET | Genererar en JWT‑token |
+| /api/ai/sentiment | POST | Analyserar sentiment (kräver JWT) |
+
+### **Exempelanrop**
+
+#### Hämta token
+
+http
+
 ```
-Fail‑fast säkerställer att applikationen inte startar utan nyckel:
-
-```java
-
-@PostConstruct  
-public void failFastIfMissingKey() {  
-if (apiKey == null || apiKey.isBlank()) {  
-throw new IllegalStateException("CRITICAL: API key is missing.");  
-}  
-}
-```
-
-Detta uppfyller kraven för säker credential‑hantering.
-
-## Timeouts
-
-För att skydda servern från långsamma AI‑svar används:
-
-```java
-
-factory.setConnectTimeout(2000);  
-factory.setReadTimeout(8000);
-```
-Det innebär:
-
--   max 2 sekunder att ansluta
--   max 8 sekunder att vänta på svar
-
-Detta förhindrar att trådar blockeras.
-
-## Prompt Engineering
-
-Systemprompten tvingar modellen att returnera ren ****JSON**** enligt ett bestämt schema.
-
--   Ingen markdown
--   Ingen extra text
--   Endast JSON
--   Temperatur satt till 0.1 för stabilitet
-
-Exempel:
-
-```java
-
-String systemPrompt = """  
-Du är en strikt JSON-generator.  
-Du får ENDAST svara med en JSON-sträng som följer exakt detta schema:  
-{  
-"sentiment": "positive" | "neutral" | "negative",  
-"confidence": 0-100  
-}  
-Du får inte använda markdown, inga backticks, ingen förklarande text.  
-Du får inte lägga till extra fält.  
-""";
-```
-Detta gör modellen deterministisk och förutsägbar.
-
-## Rate Limits (Exponential Backoff)
-
-Vid ****HTTP 429**** används exponential backoff:
-
--   3 försök
--   1s → 2s → 4s
-
-```java
-
-if (ex.getStatusCode().value() == 429) {  
-Thread.sleep(delay);  
-delay \*= 2;  
-continue;  
-}
+GET /token
 ```
 
-Detta gör integrationen stabil även vid hög belastning.
+#### Använd token
 
-## Hallucinationer & Validering
+http
 
-AI‑svar parsas och valideras innan de accepteras.
-
--   JSON parsas med ****ObjectMapper****
--   DTO valideras med ****Bean Validation****
-
-Vid fel → fallback‑svar:
-
-```java
-
-return new AiResponseDto("neutral", 50);
 ```
-Detta skyddar applikationen från trasiga eller oförutsägbara AI‑svar.
-
-## API‑endpoint
-
-Applikationen exponerar ett ****POST‑endpoint****:
-
-Kod
-
 POST /api/ai/sentiment
-
-Exempel‑body:
-
-```json
-
-{  
-"text": "Jag är väldigt glad idag!"  
-}
-```
-Exempel‑svar (om AI‑anropet lyckas):
-
-```json
-
-{  
-"sentiment": "positive",  
-"confidence": 90  
-}
-```
-
-Fallback‑svar (timeout, rate‑limit, trasig JSON etc.):
-
-```json
-
-{  
-"sentiment": "neutral",  
-"confidence": 50  
-}
-```
-
-## Arkitektur
-
--   ****AiController**** tar emot request
--   ****AiClientService**** hanterar AI‑anrop, timeouts, backoff, validering och fallback
--   ****PromptBuilder**** genererar deterministiska prompts
--   ****DTOs**** definierar strikt input/output
--   ****RestClient**** används för HTTP‑anrop
-
-## Tillförlitlighet
-
-Systemet är byggt för att alltid svara, även om OpenAI inte gör det.
-
--   fallback‑läge
--   validering
--   timeouts
--   retry/backoff
--   strikt JSON‑schema
-
-Detta gör integrationen robust och produktionslik.
-
-## Körning
-
-### 1\. Sätt miljövariabel:
-
-Kod
-
-OPENAI\_API\_KEY=sk-xxxxxxx
-
-### 2\. Starta applikationen
-
-Spring Boot körs lokalt på:
-
-Kod
-
-http://localhost:8080
-
-### 3\. Testa endpointen i Postman
-
-****POST****
-
-Kod
-
-http://localhost:8080/api/ai/sentiment
-
-****Headers:****
-
-Kod
-
+Authorization: Bearer <token>
 Content-Type: application/json
 
-****Body:****
-
-```json
-
-{  
-"text": "Jag är väldigt glad idag!"  
+{
+  "text": "Jag älskar soliga dagar!"
 }
 ```
 
-## Tester (Kantfall & Tillförlitlighet)
-Projektet innehåller tre enhetstester som verifierar tillförlitlighetslagret enligt Steg 6 i labbinstruktionen.
+## **Säkerhet**
 
-### Hallucinationstest
-Testar att trasig eller icke‑JSON text från AI fångas upp och att fallback‑värden returneras.
+### **JWT‑autentisering**
 
-Scenario:  
-AI‑svar: "Sure, here is your summary ..."  
-Förväntat resultat:  
-Fallback → { "sentiment": "neutral", "confidence": 50 }
+-   `/token` är öppet
 
-### Rate‑limit‑test (HTTP 429)
-Testar att klienten hanterar rate‑limit‑fel utan att krascha och att exponential backoff triggas.
+-   `/api/ai/sentiment` kräver **JWT**
 
-Scenario:  
-En test‑endpoint returnerar alltid 429
-Förväntat resultat:  
-Backoff‑logik körs, inget ohanterat undantag kastas
+-   Secret key via `JWT_SECRET` environment variable
 
-### Timeout‑test
-Testar att klienten avbryter långsamma anrop korrekt.
+-   Token valideras i `JwtAuthFilter`
 
-Scenario:  
-ReadTimeout sätts till 10 ms
-Anrop görs mot en tjänst som svarar efter 5 sekunder
-Förväntat resultat:  
-Timeout‑exception kastas
+-   SecurityContext sätts korrekt
 
-Dessa tester verifierar att systemet hanterar:
+###  **Input‑validering**
 
-långsamma AI‑svar
+DTO‑klasser använder `jakarta.validation`:
 
-rate limits
+java
 
-trasig eller oförutsägbar AI‑output
-
-…och att fallback‑logiken fungerar som avsett.
-
-### Köra alla tester
-Du kan köra alla tester i projektet via Maven i IntelliJ Terminal:
-
-```bash
-mvn test
 ```
-Detta kör samtliga tester i src/test/java, inklusive:
+@NotBlank
+private String text;
 
-timeout‑test
+@Min(0)
+@Max(100)
+private Integer confidence;
+```
 
-rate‑limit‑test
+### **OWASP Dependency‑Check**
 
-hallucinationstest
+-   Integrerad i `pom.xml`
 
-## Sammanfattning
+-   Körs automatiskt i CI
 
-Detta projekt uppfyller alla krav i Labb 1k5:
+-   **CVE**‑databas cacheas
 
--   säker nyckelhantering
--   robust AI‑integration
--   deterministisk prompt
--   rate‑limit‑skydd
--   validering och fallback
--   tydlig arkitektur
--   tillförlitlighetsrapport
+-   Build failar vid **CVSS ≥ 7**
+
+## **DevOps – CI/CD Pipeline**
+
+Pipeline består av två jobb:
+
+### **1\. build-and-test (CI)**
+
+Steg:
+
+-   Checkout
+
+-   Java 21
+
+-   Install Maven
+
+-   Cache (~/.m2)
+
+-   Cache Dependency‑Check DB
+
+-   `mvn test`
+
+-   `mvn dependency-check:check`
+
+**Resultat:** Automatiska tester + säkerhetsskanning.
+
+### **2\. docker-push (CD)**
+
+Steg:
+
+-   Checkout
+
+-   Buildx setup
+
+-   Login till Docker Hub (GitHub Secrets)
+
+-   Build & push Docker image
+
+**Resultat:** Fullt automatiserad deployment.
+
+## **Docker**
+
+### Multi‑stage Dockerfile
+
+-   **Stage 1:** Maven bygger jar
+
+-   **Stage 2:** Temurin 21‑jre‑alpine kör jar
+
+### Bygga lokalt
+
+bash
+
+```
+docker build -t labb2k5 .
+```
+
+### Köra lokalt
+
+bash
+
+```
+docker run -p 8080:8080 -e JWT_SECRET=hemligt labb2k5
+```
+
+## **Miljövariabler**
+
+| Variabel | Beskrivning |
+| --- | --- |
+| JWT_SECRET | Hemlig nyckel för signering av JWT |
+| OPENAI_API_KEY | API‑nyckel för AI‑anrop (valfri i CI) |
+
+## **Identifierade & Åtgärdade Sårbarheter (OWASP Top 10)**
+
+### ✔ **A01 – Broken Access Control**
+
+-   Endpoints skyddade med **JWT**
+
+-   Filterkedja implementerad
+
+### ✔ **A07 – Identification & Authentication Failures**
+
+-   **JWT**‑baserad autentisering
+
+-   Secret via environment variable
+
+-   Token valideras korrekt
+
+### ✔ **A06 – Vulnerable Components**
+
+-   Dependency‑Check integrerad
+
+-   CI stoppar vid kritiska **CVE**:er
+
+-   **CVE**‑databas cacheas
+
+## **Testning**
+
+Projektet innehåller automatiska tester som körs i CI:
+
+-   Spring Boot context test
+
+-   Rate limit test
+
+-   Timeout test
+
+-   Hallucination test
+
+-   Fallback test när **API**‑nyckel saknas
+
+**Alla tester passerar i CI.**
+
+## **Kravuppfyllnad**
+
+-   ✔ Containerisering
+
+-   ✔ CI med automatiska tester
+
+-   ✔ CD med Docker‑push
+
+-   ✔ Secrets via GitHub Secrets
+
+-   ✔ **JWT**‑autentisering
+
+-   ✔ **OWASP** Dependency‑Check
+
+-   ✔ Tre **OWASP**‑sårbarheter identifierade och åtgärdade
+
+-   ✔ Skriftlig säkerhetsrapport
+
+-   ✔ Reproducerbar DevOps‑pipeline
+
+## **Författare**
+
+**Rasha Knifdi** 
+Fullstack Java – Chas Academy

@@ -1,24 +1,36 @@
-# **Individuell Labb 2k5 – DevOps, CI/CD & Applikationssäkerhet**
+# **Individuell Labb 2k5 – DevOps, CI/CD & Application Security**
 
 ### *Spring Boot + Docker + GitHub Actions*
 
 ## **Översikt**
 
-Detta projekt är en säkerhetsförstärkt Spring Boot‑applikation som analyserar sentiment via ett AI‑API. I denna labb har jag implementerat:
+Detta projekt är en del av Individuell Labb 2k5 i kursen *DevOps, CI/CD & Applikationssäkerhet*. Applikationen är en säkerhetsförstärkt Spring Boot‑tjänst som har byggts ut med:
 
--   Containerisering med Docker
+-   Containerisering med **Docker**
 
--   CI/CD‑pipeline med GitHub Actions
+-   CI/CD‑pipeline via **GitHub Actions**
 
 -   Automatiska tester
 
--   Automatiserad Docker‑deployment
+-   **OWASP Dependency‑Check**
 
--   **JWT**‑baserad autentisering
+-   **JWT‑baserad autentisering**
 
--   **OWASP** Dependency‑Check
+-   Åtgärder för tre **OWASP Top 10‑sårbarheter**
 
--   Åtgärder för tre **OWASP** Top 10‑sårbarheter
+Projektet är fullt automatiserat och redo för deployment.
+
+## **Funktionalitet**
+
+Applikationen innehåller:
+
+-   `/token` – genererar en JWT‑token
+
+-   `/api/ai/sentiment` – skyddad endpoint som kräver giltig JWT
+
+-   Spring Security‑konfiguration med eget JWT‑filter
+
+-   Dependency‑Check som stoppar build vid kritiska CVE:er
 
 ## **API‑endpoints**
 
@@ -31,7 +43,7 @@ Detta projekt är en säkerhetsförstärkt Spring Boot‑applikation som analyse
 
 #### Hämta token
 
-http
+Kod
 
 ```
 GET /token
@@ -39,7 +51,7 @@ GET /token
 
 #### Använd token
 
-http
+Kod
 
 ```
 POST /api/ai/sentiment
@@ -50,47 +62,128 @@ Content-Type: application/json
   "text": "Jag älskar soliga dagar!"
 }
 ```
+## **Testa API i Postman**
 
+För att testa applikationen med JWT‑autentisering i Postman:
+
+### **1\. Hämta JWT‑token**
+
+**GET**
+
+Kod
+
+```
+http://localhost:8080/token
+```
+
+Kopiera token från svaret, t.ex.:
+
+Kod
+
+```
+eyJhbGciOiJIUzI1NiJ9...
+```
+
+### **2\. Anropa skyddad endpoint**
+
+**POST**
+
+Kod
+
+```
+http://localhost:8080/api/ai/sentiment
+```
+
+### **Headers**
+
+| Key | Value |
+| --- | --- |
+| Authorization | Bearer <din-token> |
+| Content-Type | application/json |
+
+### **Body (raw JSON)**
+
+json
+
+```
+{
+  "text": "Jag älskar soliga dagar!"
+}
+```
+
+### **Förväntat svar**
+
+json
+
+```
+{
+  "sentiment": "positive",
+  "confidence": 95
+}
+```
+
+Om token saknas eller är fel returneras:
+
+Kod
+
+```
+401 Unauthorized
+```
 ## **Säkerhet**
 
-### **JWT‑autentisering**
+### **A01 – Broken Access Control**
 
--   `/token` är öppet
+-   Endpoints skyddade via Spring Security
 
--   `/api/ai/sentiment` kräver **JWT**
+-   JWT‑filter validerar token
 
--   Secret key via `JWT_SECRET` environment variable
+-   Obehöriga får **401 Unauthorized**
 
--   Token valideras i `JwtAuthFilter`
+### **A07 – Identification & Authentication Failures**
 
--   SecurityContext sätts korrekt
+-   JWT‑generering och validering
 
-###  **Input‑validering**
+-   Secret key via `JWT_SECRET` miljövariabel
 
-DTO‑klasser använder `jakarta.validation`:
+-   Ingen hårdkodad hemlighet i koden
 
-java
+### **A06 – Vulnerable & Outdated Components**
 
-```
-@NotBlank
-private String text;
+-   OWASP Dependency‑Check integrerad i Maven
 
-@Min(0)
-@Max(100)
-private Integer confidence;
-```
-
-### **OWASP Dependency‑Check**
-
--   Integrerad i `pom.xml`
-
--   Körs automatiskt i CI
-
--   **CVE**‑databas cacheas
+-   CI‑pipeline kör dependency‑check vid varje push
 
 -   Build failar vid **CVSS ≥ 7**
 
-## **DevOps – CI/CD Pipeline**
+## **Docker**
+
+Applikationen är containeriserad med en multi‑stage Dockerfile:
+
+-   **Build‑stage:** `eclipse-temurin:21-jdk-alpine`
+
+-   **Runtime‑stage:** `eclipse-temurin:21-jre-alpine`
+
+-   Minimal image med endast färdigbyggd `.jar`
+
+-   Optimerad för produktion
+
+### **Bygga lokalt**
+
+bash
+
+```
+docker build -t labb2k5 .
+```
+
+### **Köra lokalt**
+
+bash
+
+```
+docker run -p 8080:8080 -e JWT_SECRET=hemligt labb2k5
+```
+
+## **CI/CD – GitHub Actions**
 
 Pipeline består av två jobb:
 
@@ -104,9 +197,9 @@ Steg:
 
 -   Install Maven
 
--   Cache (~/.m2)
+-   Cache av Maven dependencies
 
--   Cache Dependency‑Check DB
+-   Cache av Dependency‑Check databas
 
 -   `mvn test`
 
@@ -120,104 +213,86 @@ Steg:
 
 -   Checkout
 
--   Buildx setup
+-   Docker Buildx
 
--   Login till Docker Hub (GitHub Secrets)
+-   Login via GitHub Secrets
 
--   Build & push Docker image
+-   Build & push till Docker Hub
 
-**Resultat:** Fullt automatiserad deployment.
+**Resultat:** Fullt automatiserad deployment vid varje godkänd push.
 
-## **Docker**
+Pipeline körs vid:
 
-### Multi‑stage Dockerfile
+-   `push` till `main`
 
--   **Stage 1:** Maven bygger jar
+-   `pull_request` till `main`
 
--   **Stage 2:** Temurin 21‑jre‑alpine kör jar
+## **Projektstruktur**
 
-### Bygga lokalt
-
-bash
+Kod
 
 ```
-docker build -t labb2k5 .
-```
-
-### Köra lokalt
-
-bash
-
-```
-docker run -p 8080:8080 -e JWT_SECRET=hemligt labb2k5
+labb2k5-devops-security/
+│
+├── src/
+├── pom.xml
+├── Dockerfile
+├── .dockerignore
+├── mvnw
+├── .mvn/
+└── .github/workflows/ci-cd-pipeline.yml
 ```
 
 ## **Miljövariabler**
 
 | Variabel | Beskrivning |
 | --- | --- |
-| JWT_SECRET | Hemlig nyckel för signering av JWT |
+| JWT_SECRET | Hemlig nyckel för signering av JWT‑tokens |
 | OPENAI_API_KEY | API‑nyckel för AI‑anrop (valfri i CI) |
 
-## **Identifierade & Åtgärdade Sårbarheter (OWASP Top 10)**
+Exempel:
 
-### ✔ **A01 – Broken Access Control**
+bash
 
--   Endpoints skyddade med **JWT**
+```
+-e JWT_SECRET=superhemligt
+```
 
--   Filterkedja implementerad
+## **Säkerhetsrapport**
 
-### ✔ **A07 – Identification & Authentication Failures**
+En fullständig säkerhetsrapport finns i projektet och innehåller:
 
--   **JWT**‑baserad autentisering
+-   Identifierade sårbarheter
 
--   Secret via environment variable
+-   Tekniska åtgärder
 
--   Token valideras korrekt
+-   Riskanalys
 
-### ✔ **A06 – Vulnerable Components**
+-   Prioritering
+
+-   Koppling till OWASP Top 10
+
+## **Sammanfattning**
+
+Detta projekt uppfyller alla krav för **VG** i Labb 2k5:
+
+-   Full CI/CD‑pipeline
+
+-   Automatiserad Docker‑deployment
+
+-   Säker hantering av secrets
+
+-   JWT‑baserad autentisering
 
 -   Dependency‑Check integrerad
 
--   CI stoppar vid kritiska **CVE**:er
+-   Åtgärdade OWASP‑sårbarheter
 
--   **CVE**‑databas cacheas
+-   Dokumenterad säkerhetsanalys
 
-## **Testning**
+-   Optimerad Dockerfile
 
-Projektet innehåller automatiska tester som körs i CI:
-
--   Spring Boot context test
-
--   Rate limit test
-
--   Timeout test
-
--   Hallucination test
-
--   Fallback test när **API**‑nyckel saknas
-
-**Alla tester passerar i CI.**
-
-## **Kravuppfyllnad**
-
--   ✔ Containerisering
-
--   ✔ CI med automatiska tester
-
--   ✔ CD med Docker‑push
-
--   ✔ Secrets via GitHub Secrets
-
--   ✔ **JWT**‑autentisering
-
--   ✔ **OWASP** Dependency‑Check
-
--   ✔ Tre **OWASP**‑sårbarheter identifierade och åtgärdade
-
--   ✔ Skriftlig säkerhetsrapport
-
--   ✔ Reproducerbar DevOps‑pipeline
+-   `.dockerignore` för snabbare builds
 
 ## **Författare**
 
